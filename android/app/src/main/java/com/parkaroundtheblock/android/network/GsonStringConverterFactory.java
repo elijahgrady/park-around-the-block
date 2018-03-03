@@ -1,4 +1,4 @@
-package com.parkaroundtheblock.parkaroundtheblock;
+package com.parkaroundtheblock.android.network;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;

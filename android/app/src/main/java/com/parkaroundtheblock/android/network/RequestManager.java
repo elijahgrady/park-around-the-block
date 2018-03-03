@@ -1,4 +1,4 @@
-package com.parkaroundtheblock.parkaroundtheblock;
+package com.parkaroundtheblock.android.network;
 
 import android.content.Context;
 import android.support.annotation.NonNull;

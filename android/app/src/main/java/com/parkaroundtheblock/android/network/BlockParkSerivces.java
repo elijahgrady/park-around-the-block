@@ -1,4 +1,4 @@
-package com.parkaroundtheblock.parkaroundtheblock;
+package com.parkaroundtheblock.android.network;
 
 import io.reactivex.Observable;
 import retrofit2.Response;

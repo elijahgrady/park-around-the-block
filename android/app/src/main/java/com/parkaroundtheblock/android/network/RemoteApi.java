@@ -1,9 +1,8 @@
-package com.parkaroundtheblock.parkaroundtheblock;
+package com.parkaroundtheblock.android.network;
 
 import android.content.Context;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
