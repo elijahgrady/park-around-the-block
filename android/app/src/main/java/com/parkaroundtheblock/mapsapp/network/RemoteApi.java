@@ -58,9 +58,9 @@ public class RemoteApi {
         disposables = new ArrayList<>();
     }
 
-    public void call(Context context, Consumer<? super Response<Void>> onNext, Consumer<? super Throwable> onError) {
+    public void getParkingSpots(Context context, String lat, String lng, Consumer<? super Response<Content>> onNext, Consumer<? super Throwable> onError) {
         cleanupDisposables();
-        disposables.add(RequestManager.getDefault(context).call()
+        disposables.add(RequestManager.getDefault(context).getParkingSpots(lat, lng)
                 .observeOn(AndroidSchedulers.mainThread()).subscribeOn(Schedulers.io()).subscribe(onNext, onError));
     }
 }
