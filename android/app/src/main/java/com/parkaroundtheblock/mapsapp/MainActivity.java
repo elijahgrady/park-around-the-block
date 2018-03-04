@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
@@ -20,14 +21,21 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.parkaroundtheblock.mapsapp.network.Content;
+import com.parkaroundtheblock.mapsapp.network.LocationItem;
+import com.parkaroundtheblock.mapsapp.network.RemoteApi;
 
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Maybe;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
+import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
+
+    private Content content = null;
 
     private TextView mTextMessage;
     private GoogleMap map;
@@ -38,6 +46,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private View splash;
     private BottomNavigationView bottomNavigationView;
     private Button parkButton;
+
+    int contentIndex = -1;
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -60,6 +70,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     };
 
+    private void move(LocationItem locationItem) {
+        if (locationItem != null && locationItem.properties != null && !TextUtils.isEmpty(locationItem.properties.geoCoordinates)) {
+            String[] coords = locationItem.properties.geoCoordinates.split(":");
+            if (coords.length >= 2) {
+                try {
+                    CameraPosition cameraPosition = new CameraPosition.Builder()
+                            .target(new LatLng(Integer.parseInt(coords[0]),Integer.parseInt(coords[1])))
+                            .zoom(16)
+                            .build();
+
+                    map.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }
+
+
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,12 +107,33 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         parkButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                CameraPosition cameraPosition = new CameraPosition.Builder()
-                        .target(new LatLng(32.7172267,-117.1694746))
-                        .zoom(16)
-                        .build();
+                if (content == null) {
+                    RemoteApi.getInstance().getParkingSpots(MainActivity.this, "32.7172267", "-117.1694746", new Consumer<Response<Content>>() {
+                        @Override
+                        public void accept(Response<Content> contentResponse) throws Exception {
+                            content = contentResponse.body();
 
-                map.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                            if (content.content.size() > 0) {
+                                contentIndex = 0;
+                                moveNext();
+                            }
+                        }
+                    }, new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable throwable) throws Exception {
+                            CameraPosition cameraPosition = new CameraPosition.Builder()
+                                    .target(new LatLng(32.7172267,-117.1694746))
+                                    .zoom(16)
+                                    .build();
+
+                            map.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                        }
+                    });
+                } else {
+                    moveNext();
+                }
+
+
             }
         });
 
@@ -118,6 +170,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     }
                 })
                 .subscribe();
+    }
+
+    private void moveNext() {
+        move(content.content.get(contentIndex));
+        ++contentIndex;
+        if (contentIndex >= content.content.size()) {
+            contentIndex = 0;
+        }
     }
 
     private void setNavigationBarVisibility(boolean visibility){
