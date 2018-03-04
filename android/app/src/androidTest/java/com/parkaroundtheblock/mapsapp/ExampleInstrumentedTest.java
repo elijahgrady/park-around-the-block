@@ -1,4 +1,4 @@
-package com.parkaroundtheblock.android;
+package com.parkaroundtheblock.mapsapp;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("com.parkaroundtheblock.tabsapp", appContext.getPackageName());
+        assertEquals("com.parkaroundtheblock.mapsapp", appContext.getPackageName());
     }
 }

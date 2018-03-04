@@ -1,4 +1,4 @@
-package com.parkaroundtheblock.android.network;
+package com.parkaroundtheblock.mapsapp.network;
 
 import io.reactivex.Observable;
 import retrofit2.Response;

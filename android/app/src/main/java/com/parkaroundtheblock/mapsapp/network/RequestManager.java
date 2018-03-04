@@ -1,4 +1,4 @@
-package com.parkaroundtheblock.android.network;
+package com.parkaroundtheblock.mapsapp.network;
 
 import android.content.Context;
 import android.support.annotation.NonNull;

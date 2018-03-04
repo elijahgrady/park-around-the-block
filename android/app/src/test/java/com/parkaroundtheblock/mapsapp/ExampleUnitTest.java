@@ -1,4 +1,4 @@
-package com.parkaroundtheblock.android;
+package com.parkaroundtheblock.mapsapp;
 
 import org.junit.Test;
 
