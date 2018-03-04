@@ -1,8 +1,12 @@
 package com.parkaroundtheblock.mapsapp;
 
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.MenuItem;
@@ -25,9 +29,11 @@ import com.parkaroundtheblock.mapsapp.network.Content;
 import com.parkaroundtheblock.mapsapp.network.LocationItem;
 import com.parkaroundtheblock.mapsapp.network.RemoteApi;
 
+import java.text.DecimalFormat;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Maybe;
+import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
@@ -61,14 +67,74 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     mTextMessage.setText(R.string.title_park);
                     return true;
                 case R.id.navigation_pay:
-                    park.setVisibility(View.GONE);
-                    pay.setVisibility(View.VISIBLE);
-                    mTextMessage.setText(R.string.title_pay);
+                    redirectToPay();
                     return true;
             }
             return false;
         }
     };
+
+    private void redirectToPay() {
+        park.setVisibility(View.GONE);
+        pay.setVisibility(View.VISIBLE);
+        mTextMessage.setText(R.string.title_pay);
+
+
+        float difference = 17.22f;
+        if (Math.abs((int) difference) > 1) {
+            float peace = difference / Math.abs((int) difference);
+            Observable.interval(50, TimeUnit.MILLISECONDS)
+                    .take(Math.abs((int) difference))
+                    .map(v -> v + 1)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe((v) -> {
+                        float total = Math.abs(-179.52f);
+                        total += peace;
+                        updateTotalToday(total);
+                    });
+        }
+
+        Maybe.empty()
+                .delay(5000, TimeUnit.MILLISECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnComplete(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        ActionBar actionBar = ((AppCompatActivity) MainActivity.this).getSupportActionBar();
+                        if (actionBar != null) {
+                            actionBar.setTitle("Transaction Completed. Mining started.");
+                            invalidateOptionsMenu();
+                        }
+                    }
+                })
+                .subscribe();
+    }
+
+    public void updateTotalToday(float number) {
+        try {
+            float totalTripsDeductions = Math.abs(number);
+            DecimalFormat formatter = new DecimalFormat("#,###,###");
+            changeTitle("0," +formatter.format(totalTripsDeductions) + " XYO PENDING...");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void changeTitle(String text) {
+        try {
+            if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
+                ActionBar actionBar = ((AppCompatActivity) this).getSupportActionBar();
+                if (actionBar != null) {
+                    actionBar.setTitle(text);
+                    invalidateOptionsMenu();
+                    actionBar.setBackgroundDrawable(new ColorDrawable(ContextCompat.getColor(this, R.color.colorAccent)));
+
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     private void move(LocationItem locationItem) {
         if (locationItem != null && locationItem.properties != null && !TextUtils.isEmpty(locationItem.properties.geoCoordinates)) {
@@ -91,6 +157,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
+    private boolean shouldBeRedirectedToPay = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -108,7 +176,33 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onClick(View v) {
                 if (content == null) {
-                    RemoteApi.getInstance().getParkingSpots(MainActivity.this, "32.7172267", "-117.1694746", new Consumer<Response<Content>>() {
+                    if (shouldBeRedirectedToPay) {
+                        redirectToPay();
+                        return;
+                    }
+
+                    CameraPosition cameraPosition = new CameraPosition.Builder()
+                            .target(new LatLng(32.7172267,-117.1694746))
+                            .zoom(18)
+                            .build();
+
+                    map.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
+                    Maybe.empty()
+                            .delay(1000, TimeUnit.MILLISECONDS)
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .doOnComplete(new Action() {
+                                @Override
+                                public void run() throws Exception {
+                                    parkButton.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_payment));
+                                    shouldBeRedirectedToPay = true;
+                                }
+                            })
+                            .subscribe();
+
+
+
+                   /* RemoteApi.getInstance().getParkingSpots(MainActivity.this, "32.7172267", "-117.1694746", new Consumer<Response<Content>>() {
                         @Override
                         public void accept(Response<Content> contentResponse) throws Exception {
                             content = contentResponse.body();
@@ -121,14 +215,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     }, new Consumer<Throwable>() {
                         @Override
                         public void accept(Throwable throwable) throws Exception {
-                            CameraPosition cameraPosition = new CameraPosition.Builder()
-                                    .target(new LatLng(32.7172267,-117.1694746))
-                                    .zoom(16)
-                                    .build();
 
-                            map.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
                         }
-                    });
+                    });*/
                 } else {
                     moveNext();
                 }
@@ -208,14 +297,51 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         CameraPosition cameraPosition = new CameraPosition.Builder()
                 .target(new LatLng(32.7185975, -117.1594094))
-                .zoom(15)
+                .zoom(16)
                 .build();
 
         map.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
 
-        map.addMarker(new MarkerOptions().position(new LatLng(32.7185975, -117.1594094)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_green)));
+        map.addMarker(new MarkerOptions().position(new LatLng(32.7185975, -117.1594094)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_me)));
 
         map.addMarker(new MarkerOptions().position(new LatLng(32.7172267,-117.1694746)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_green)));
+
+
+
+
+        map.addMarker(new MarkerOptions().position(new LatLng(32.720997, -117.1684)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+
+        map.addMarker(new MarkerOptions().position(new LatLng( 32.715576, -117.163895)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+
+        map.addMarker(new MarkerOptions().position(new LatLng(32.71135, -117.17089)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+
+        map.addMarker(new MarkerOptions().position(new LatLng(32.715847, -117.16481)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+        map.addMarker(new MarkerOptions().position(new LatLng(32.705833, -117.159004)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+
+        map.addMarker(new MarkerOptions().position(new LatLng(32.705894, -117.163315)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+
+        map.addMarker(new MarkerOptions().position(new LatLng( 32.719986, -117.16469)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+
+        map.addMarker(new MarkerOptions().position(new LatLng(32.70773, -117.162094)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+        map.addMarker(new MarkerOptions().position(new LatLng(32.719982, -117.16303)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+        map.addMarker(new MarkerOptions().position(new LatLng(32.715603,-117.16119)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+
+        map.addMarker(new MarkerOptions().position(new LatLng(32.715824, -117.163025)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+
+        map.addMarker(new MarkerOptions().position(new LatLng(32.71555, -117.165504)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+        map.addMarker(new MarkerOptions().position(new LatLng(32.715588, -117.16458)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+        map.addMarker(new MarkerOptions().position(new LatLng(32.710796,-117.16817)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+        map.addMarker(new MarkerOptions().position(new LatLng(32.71789,-117.160995)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+        map.addMarker(new MarkerOptions().position(new LatLng(32.715836,-117.163956)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin_red)));
+
+
+
+
+
+
+
+
+
 
 
         UiSettings settings = map.getUiSettings();
